@@ -69,83 +69,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void getZahteva(){
-
-
-/*
-   cameraView.captureImage(new CameraKitEventCallback<CameraKitImage>() {
-       @Override
-       public void callback(CameraKitImage cameraKitImage) {
-
-
-           slika = cameraKitImage.getBitmap();  //Bitmap slika
-       }
-
-
-   });
-
-    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-    slika.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
-    String encodedImage = Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT);
-
-
-*/
-
-
-
-        bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.alen);
-        // bitmap = slika;
-
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 40, baos);
-        byte[] b = baos.toByteArray();
-        String encodedImage = Base64.encodeToString(b, Base64.DEFAULT);
-
-
-
-
-        OkHttpClient client = new OkHttpClient();
-
-        RequestBody postData = new FormBody.Builder()
-                .add("type", "json")
-                .add("image", encodedImage)
-                .add("imageName", "Alen")
-                .add("namig", "neki namig")
-                .add("tocke", "koliko tock je vredno")
-                .add("latitude", String.valueOf(12323))
-                .add("longitude", String.valueOf(898798))
-                .build();
-
-        Request request = new Request.Builder()
-                .url(postUrl)
-                .post(postData)
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if (response.isSuccessful()) {
-                    final String myResponse = response.body().string();
-
-                    MainActivity.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mTextViewResult.setText(myResponse);
-                        }
-                    });
-                }
-            }
-        });
-
-
-
-    }
 
 
     String imageDescriptives;
@@ -205,7 +128,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void postMetoda(View view) {
-        //getZahteva();
 
 
         cameraView.captureImage(new CameraKitEventCallback<CameraKitImage>() {
@@ -214,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
                 //TO HTTP!!! itImage.getBitmap(),"slika"+imageCounter+".jpg", "NAMIG 123", "t1",2,2).execute();
                 //new SaveBitmapTask().execute(cameraKitImage.getBitmap());
 
-                new SendImageToServer(cameraKitImage.getBitmap(), "testna_slika.jpg", (Double)213.2132, (Double)2.321321).execute();
+                new SendImageToServer(cameraKitImage.getBitmap(), "poslana_slika.jpg", (Double)213.2132, (Double)2.321321).execute();
             }
         });
 
@@ -247,9 +169,9 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(String... strings) {
-           orgImage = Bitmap.createScaledBitmap(orgImage, 64, 128, false);
+           orgImage = Bitmap.createScaledBitmap(orgImage, 640, 1280, false);
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            orgImage.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+            orgImage.compress(Bitmap.CompressFormat.JPEG, 40, byteArrayOutputStream);
             String encodedImage = Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT);
 
             try
@@ -270,8 +192,54 @@ public class MainActivity extends AppCompatActivity {
                         .post(postData)
                         .build();
 
-                Response response = client.newCall(request).execute();
-                String result = response.body().string();
+              /*  Response response = client.newCall(request).execute();
+                final String result = response.header("ujemanje").toString();
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        //mTextViewResult.setText(GetOdgovor);
+
+                            mTextViewResult.setText(mTextViewResult.getText() + "ujemanje med slikama: " + result + "%");
+
+
+                    }
+                });
+*/            String result = "";
+                client.newCall(request).enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        if (response.isSuccessful()) {
+                            final String myResponse = response.header("ujemanje").toString();
+
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+
+
+                                    try {
+
+                                        JSONObject s = new JSONObject(myResponse);
+                                        //[{"imageDescriptives":"del1","Vprasanje":"Bo delalo?","Odgovor":"Bo delalo!","OdgovorAlt1":"Bo delalo!","OdgovorAlt2":"Bo delalo!"}]
+                                        String uj = s.getString("value");
+                                        mTextViewResult.setText("ujemanje med slikama: " + uj + "%");
+
+                                    } catch (JSONException e) {
+                                        String napaka ="Napaka JSON" +  e.toString();
+                                        mTextViewResult.setText(napaka);
+
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+
                 return result;
             }
             catch (Exception e)
