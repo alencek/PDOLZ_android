@@ -34,8 +34,8 @@ import org.json.JSONObject;
 public class MainActivity extends AppCompatActivity {
     private TextView mTextViewResult;  //izpisemo vrnjen rezultat
     private TextView tvQuery;  //JQuery string
-    String url = "http://192.168.137.1:81/ORV.aspx?izbira=igra";  //getUrl
-    String postUrl = "http://192.168.137.1:81/ORV-post.aspx"; //post url
+    String url = "http://192.168.2.100:81/ORV.aspx?izbira=igra";  //getUrl
+    String postUrl = "http://192.168.2.100:81/ORV-post.aspx"; //post url
     CameraView cameraView;
     Button btnPost;
     Bitmap slika;
@@ -205,52 +205,80 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void postMetoda(View view) {
-        getZahteva();
-
-        //  btnPost.setEnabled(false);
-        //cameraView.captureImage(new CameraKitEventCallback<CameraKitImage>() {
-        //public void callback(CameraKitImage cameraKitImage) {
-        //      slika = cameraKitImage.getBitmap();
-        //    send(slika);
-        //    }
-        //});
-    }
+        //getZahteva();
 
 
+        cameraView.captureImage(new CameraKitEventCallback<CameraKitImage>() {
+            @Override
+            public void callback(CameraKitImage cameraKitImage) {
+                //TO HTTP!!! itImage.getBitmap(),"slika"+imageCounter+".jpg", "NAMIG 123", "t1",2,2).execute();
+                //new SaveBitmapTask().execute(cameraKitImage.getBitmap());
 
-    public void send(Bitmap image) {
-
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        image.compress(Bitmap.CompressFormat.JPEG, 40, byteArrayOutputStream);
-        String encodedImage = Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT);
-
-        try
-        {
-            OkHttpClient client = new OkHttpClient();
-
-            RequestBody postData = new FormBody.Builder()
-                    .add("type", "json")
-                    .add("image", encodedImage)
-                    .add("imageName", "slika_za_primerjavo.jpg")
-                    .add("namig", "neki namig")
-                    .add("tocke", "koliko tock je vredno")
-                    .add("latitude", String.valueOf(12323))
-                    .add("longitude", String.valueOf(898798))
-                    .build();
-
-            Request request = new Request.Builder()
-                    .url(postUrl)
-                    .post(postData)
-                    .build();
-
-            Response response = client.newCall(request).execute();
-            String result = response.body().string();
-            mTextViewResult.setText(result);
-        }
-        catch (Exception e)
-        {
-            mTextViewResult.setText("napaka pri POST metodi!!!");
-        }
+                new SendImageToServer(cameraKitImage.getBitmap(), "testna_slika.jpg", (Double)213.2132, (Double)2.321321).execute();
+            }
+        });
 
     }
-}
+
+
+
+    public class SendImageToServer extends AsyncTask<String, Void, String> {
+        Bitmap orgImage;
+        String imageName;
+
+        double latitude;
+        double longitude;
+
+
+        public SendImageToServer(Bitmap image, String imageName, double latitude, double longitude) {
+            this.orgImage = image;
+            this.imageName = imageName;
+
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            mTextViewResult.setText("Poslano");
+
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+           orgImage = Bitmap.createScaledBitmap(orgImage, 64, 128, false);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            orgImage.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
+            String encodedImage = Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT);
+
+            try
+            {
+                OkHttpClient client = new OkHttpClient();
+
+                RequestBody postData = new FormBody.Builder()
+                        .add("type", "json")
+                        .add("image", encodedImage)
+                        .add("imageName", imageName)
+
+                        .add("latitude", String.valueOf(latitude))
+                        .add("longitude", String.valueOf(longitude))
+                        .build();
+
+                Request request = new Request.Builder()
+                        .url(postUrl)
+                        .post(postData)
+                        .build();
+
+                Response response = client.newCall(request).execute();
+                String result = response.body().string();
+                return result;
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+
+        }
+    }
+    }
